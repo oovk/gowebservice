@@ -69,8 +69,8 @@ func getProductList() []Product {
 	for _, value := range productMap.m {
 		products = append(products, value) //iterating through the productMap and adding the data at index to new product struct type datastructure
 	}
-	productMap.Unlock() //unlocking after done reading
-	return products     //returning product structure
+	productMap.RUnlock() //unlocking after done reading
+	return products      //returning product structure
 }
 
 func getProductIds() []int {
