@@ -3,8 +3,10 @@ package product
 //includes a map of ints to products, in a read write mutex, product as key and product as value. multithreaded and maps in go are not thread safe
 //thats why we warp our map in mutex to avoid two thread reading and writing at same time
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"gowebservice/database"
 	"io/ioutil"
 	"log"
 	"os"
@@ -48,13 +50,30 @@ func loadProductMap() (map[int]Product, error) {
 
 }
 
-func getProduct(ProductID int) *Product {
-	productMap.RLock() //read lock to prevent another thread from reading
-	defer productMap.RUnlock()
-	if product, ok := productMap.m[ProductID]; ok {
-		return &product
+func getProduct(ProductID int) (*Product, error) {
+	row := database.DbConn.QueryRow(`SELECT productId,
+	Manufaturer, 
+	sku, 
+	upc,
+	pricePerUnit,
+	quantityOnHand,
+	productName, 
+	FROM products
+	WHERE productId = ?`, ProductID) //get the specifc row corresponding to productID
+	product := &Product{}
+	err := row.Scan(&product.ProductID,
+		&product.Manufacturer,
+		&product.Sku,
+		&product.Upc,
+		&product.PricePerUnit,
+		&product.QuantityOnHand,
+		&product.ProductName)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
-	return nil
+	return product, nil
 }
 
 func removeProduct(productID int) {
@@ -63,14 +82,32 @@ func removeProduct(productID int) {
 	delete(productMap.m, productID)
 }
 
-func getProductList() []Product {
-	productMap.RLock()                                //read lock untill we read the map
-	products := make([]Product, 0, len(productMap.m)) //empty map of product struct type with the same length as productMap
-	for _, value := range productMap.m {
-		products = append(products, value) //iterating through the productMap and adding the data at index to new product struct type datastructure
+func getProductList() ([]Product, error) {
+	results, err := database.DbConn.Query(`SELECT productId,
+	Manufaturer, 
+	sku, 
+	upc,
+	pricePerUnit,
+	quantityOnHand,
+	productName, 
+	FROM products`)
+	if err != nil {
+		return nil, err
 	}
-	productMap.RUnlock() //unlocking after done reading
-	return products      //returning product structure
+	defer results.Close()
+	products := make([]Product, 0) // make slice for product mapping with productId
+	for results.Next() {           //move the product to scan next record
+		var product Product
+		results.Scan(&product.ProductID,
+			&product.Manufacturer,
+			&product.Sku,
+			&product.Upc,
+			&product.PricePerUnit,
+			&product.QuantityOnHand,
+			&product.ProductName)
+		products = append(products, product)
+	}
+	return products, nil
 }
 
 func getProductIds() []int {
@@ -92,7 +129,10 @@ func getNextProductID() int { //get the next product id where we need to append 
 func addOrUpdateProduct(product Product) (int, error) {
 	addOrUpdateID := -1
 	if product.ProductID > 0 {
-		oldProduct := getProduct(product.ProductID)
+		oldProduct, err := getProduct(product.ProductID)
+		if err != nil {
+			return addOrUpdateID, err
+		}
 		if oldProduct == nil {
 			return 0, fmt.Errorf("product id [%d] does not exists", product.ProductID)
 		}

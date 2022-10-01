@@ -26,7 +26,11 @@ func productHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	product := getProduct(productID) //if it is a integer the find that in productlist and return the details
+	product, err := getProduct(productID) //if it is a integer the find that in productlist and return the details
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if product == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -77,7 +81,10 @@ func productHandler(w http.ResponseWriter, r *http.Request) {
 func productsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		producList := getProductList()
+		producList, err := getProductList()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		productsJSON, err := json.Marshal(producList)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
