@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gowebservice/cors"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,58 +20,67 @@ func SetupRoutes(apiBasePath string) {
 }
 
 func productHandler(w http.ResponseWriter, r *http.Request) {
-	urlPathSegments := strings.Split(r.URL.Path, "products/")               //checking thr productID
-	productID, err := strconv.Atoi(urlPathSegments[len(urlPathSegments)-1]) //if it is not integer return error
+	urlPathSegments := strings.Split(r.URL.Path, fmt.Sprint("%s/", productBasePath)) //checking thr productID
+	if len(urlPathSegments[1:]) > 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	productID, err := strconv.Atoi(urlPathSegments[len(urlPathSegments)-1])
 	if err != nil {
+		log.Print(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	product, err := getProduct(productID) //if it is a integer the find that in productlist and return the details
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if product == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	switch r.Method { // now we check the request typ
 	case http.MethodGet: //if it is a get then return the json data from productlist
-		productsJSON, err := json.Marshal(product)
+		product, err := getProduct(productID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(productsJSON)
+		if product == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		j, err := json.Marshal(product)
+		if err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		_, err = w.Write(j)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	case http.MethodPut: //if the method is put then read the request body and update the product in productlist at perticular index, we are not adding new one just updating details of existing one
-		var updateProduct Product
-		bodyBytes, err := ioutil.ReadAll(r.Body)
+		var product Product
+		err := json.NewDecoder(r.Body).Decode(&product)
 		if err != nil {
+			log.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err = json.Unmarshal(bodyBytes, &updateProduct)
+		if product.ProductID != productID {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = updateProduct(product)
 		if err != nil {
+			log.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if updateProduct.ProductID != productID {
-			w.WriteHeader(http.StatusBadRequest)
+	case http.MethodDelete:
+		err := removeProduct(productID)
+		if err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		addOrUpdateProduct(updateProduct)
-		w.WriteHeader(http.StatusOK)
+
+	case http.MethodOptions:
 		return
-
-	case http.MethodDelete: //to handle delete requests
-		removeProduct(productID)
-
-	case http.MethodOptions: //cors workflow has preflight request sent by browser using httpOptions method to return the cors specific headers so that browser knows it should allow traffic to be sent to that server
-		return
-
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -84,42 +93,37 @@ func productsHandler(w http.ResponseWriter, r *http.Request) {
 		producList, err := getProductList()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		productsJSON, err := json.Marshal(producList)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			log.Fatal(err)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(productsJSON)
+		_, err = w.Write(productsJSON)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	case http.MethodPost:
 		var newProduct Product
-		bodyBytes, err := ioutil.ReadAll(r.Body)
+		err := json.NewDecoder(r.Body).Decode(&newProduct)
 		if err != nil {
+			log.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err = json.Unmarshal(bodyBytes, &newProduct)
+		productID, err := insertProduct(newProduct)
 		if err != nil {
+			log.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if newProduct.ProductID != 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		_, err = addOrUpdateProduct(newProduct)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated) //201 status code
-		return
-
+		w.Write([]byte(fmt.Sprintf(`{"productId":%d}`, productID)))
 	case http.MethodOptions: //cors workflow has preflight request sent by browser using httpOptions method to return the cors specific headers so that browser knows it should allow traffic to be sent to that server
 		return
-
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 
 }
