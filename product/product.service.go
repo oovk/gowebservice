@@ -12,14 +12,7 @@ import (
 
 const productBasePath = "products"
 
-func SetupRoutes(apiBasePath string) {
-	handleProducts := http.HandlerFunc(productsHandler)
-	handleProduct := http.HandlerFunc(productHandler)
-	http.Handle(fmt.Sprintf("%s/%s", apiBasePath, productBasePath), cors.Middleware(handleProducts)) //makes apipath/products
-	http.Handle(fmt.Sprintf("%s/%s/", apiBasePath, productBasePath), cors.Middleware(handleProduct)) //makes apipath/products/
-}
-
-func productHandler(w http.ResponseWriter, r *http.Request) {
+func handleProduct(w http.ResponseWriter, r *http.Request) {
 	urlPathSegments := strings.Split(r.URL.Path, fmt.Sprintf("%s/", productBasePath)) //checking thr productID
 	if len(urlPathSegments[1:]) > 1 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -87,19 +80,19 @@ func productHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func productsHandler(w http.ResponseWriter, r *http.Request) {
+func handleProducts(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		producList, err := getProductList()
+		productList, err := getProductList()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		productsJSON, err := json.Marshal(producList)
+		j, err := json.Marshal(productList)
 		if err != nil {
 			log.Fatal(err)
 		}
-		_, err = w.Write(productsJSON)
+		_, err = w.Write(j)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -126,4 +119,11 @@ func productsHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 
+}
+
+func SetupRoutes(apiBasePath string) {
+	productsHandler := http.HandlerFunc(handleProducts)
+	productHandler := http.HandlerFunc(handleProduct)
+	http.Handle(fmt.Sprintf("%s/%s", apiBasePath, productBasePath), cors.Middleware(productsHandler)) //makes apipath/products
+	http.Handle(fmt.Sprintf("%s/%s/", apiBasePath, productBasePath), cors.Middleware(productHandler)) //makes apipath/products/
 }

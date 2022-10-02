@@ -10,7 +10,7 @@ var ReceiptDirectory string = filepath.Join("uploads")
 
 type Receipt struct {
 	ReceitName string    `json:"name"`
-	UploadDate time.Time `json:"uplaodDate"`
+	UploadDate time.Time `json:"uploadDate"`
 }
 
 func GetReceipts() ([]Receipt, error) {

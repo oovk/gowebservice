@@ -5,7 +5,9 @@ package product
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"gowebservice/database"
+	"log"
 	"time"
 )
 
@@ -22,24 +24,30 @@ func getProduct(ProductID int) (*Product, error) {
 	FROM products
 	WHERE productId = ?`, ProductID) //get the specifc row corresponding to productID
 	product := &Product{}
-	err := row.Scan(&product.ProductID,
+	err := row.Scan(
+		&product.ProductID,
 		&product.Manufacturer,
 		&product.Sku,
 		&product.Upc,
 		&product.PricePerUnit,
 		&product.QuantityOnHand,
-		&product.ProductName)
+		&product.ProductName,
+	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 	return product, nil
 }
 
 func removeProduct(productID int) error {
-	_, err := database.DbConn.Query(`DELETE FROM products WHERE productId=?`, productID)
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	_, err := database.DbConn.ExecContext(ctx, `DELETE FROM products WHERE productId = ?`, productID)
 	if err != nil {
+		log.Print(err.Error())
 		return err
 	}
 	return nil
@@ -48,7 +56,8 @@ func removeProduct(productID int) error {
 func getProductList() ([]Product, error) {
 	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
 	defer cancle()
-	results, err := database.DbConn.QueryContext(ctx, `SELECT productId,
+	results, err := database.DbConn.QueryContext(ctx, `SELECT 
+	productId,
 	manufaturer, 
 	sku, 
 	upc,
@@ -57,6 +66,7 @@ func getProductList() ([]Product, error) {
 	productName, 
 	FROM products`)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 	defer results.Close()
@@ -78,12 +88,17 @@ func getProductList() ([]Product, error) {
 func updateProduct(product Product) error {
 	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
 	defer cancle()
-	_, err := database.DbConn.ExecContext(ctx, `UPDATE products SET Manufacturer=?, 
+	if product.ProductID == 0 {
+		return errors.New("product has invalid ID")
+	}
+	_, err := database.DbConn.ExecContext(ctx, `UPDATE products SET 
+	Manufacturer=?, 
 	Sku=?, 
 	Upc=?, 
 	PricePerUnit=?,
 	QuantityOnHand=?,
-	ProductName=?`,
+	ProductName=?,
+	WHERE productId=?`,
 		product.Manufacturer,
 		product.Sku,
 		product.Upc,
@@ -114,10 +129,12 @@ func insertProduct(product Product) (int, error) {
 		product.QuantityOnHand,
 		product.ProductName) //inserting into the database using Exec
 	if err != nil {
-		return 0, nil
+		log.Println(err.Error())
+		return 0, err
 	}
 	insertID, err := result.LastInsertId()
 	if err != nil {
+		log.Println(err.Error())
 		return 0, nil
 	}
 	return int(insertID), nil

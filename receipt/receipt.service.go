@@ -36,6 +36,7 @@ func handleReceipts(w http.ResponseWriter, r *http.Request) {
 		r.ParseMultipartForm(5 << 20) //5Mb
 		file, handler, err := r.FormFile("receipt")
 		if err != nil {
+			log.Print(err)
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
