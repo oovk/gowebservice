@@ -15,14 +15,14 @@ func getProduct(ProductID int) (*Product, error) {
 	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
 	defer cancle()
 	row := database.DbConn.QueryRowContext(ctx, `SELECT productId,
-	Manufaturer, 
+	manufacturer, 
 	sku, 
 	upc,
 	pricePerUnit,
 	quantityOnHand,
-	productName, 
+	productName 
 	FROM products
-	WHERE productId = ?`, ProductID) //get the specifc row corresponding to productID
+	WHERE productId=?`, ProductID) //get the specifc row corresponding to productID
 	product := &Product{}
 	err := row.Scan(
 		&product.ProductID,
@@ -58,12 +58,12 @@ func getProductList() ([]Product, error) {
 	defer cancle()
 	results, err := database.DbConn.QueryContext(ctx, `SELECT 
 	productId,
-	manufaturer, 
+	manufacturer, 
 	sku, 
 	upc,
 	pricePerUnit,
 	quantityOnHand,
-	productName, 
+	productName 
 	FROM products`)
 	if err != nil {
 		log.Println(err.Error())
@@ -92,12 +92,12 @@ func updateProduct(product Product) error {
 		return errors.New("product has invalid ID")
 	}
 	_, err := database.DbConn.ExecContext(ctx, `UPDATE products SET 
-	Manufacturer=?, 
-	Sku=?, 
-	Upc=?, 
-	PricePerUnit=?,
-	QuantityOnHand=?,
-	ProductName=?,
+	manufacturer=?, 
+	sku=?, 
+	upc=?, 
+	pricePerUnit=?,
+	quantityOnHand=?,
+	productName=?
 	WHERE productId=?`,
 		product.Manufacturer,
 		product.Sku,
@@ -116,12 +116,12 @@ func insertProduct(product Product) (int, error) {
 	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
 	defer cancle()
 	result, err := database.DbConn.ExecContext(ctx, `INSERT INTO products
-		(Manufacturer,
+		(manufacturer,
 		sku,
 		upc, 
-		PricePerUnit,
-		QuantityOnHand,
-		ProductName) VALUES (?,?,?,?,?,?)`,
+		pricePerUnit,
+		quantityOnHand,
+		productName) VALUES (?,?,?,?,?,?)`,
 		product.Manufacturer,
 		product.Sku,
 		product.Upc,
