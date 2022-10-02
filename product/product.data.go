@@ -3,12 +3,16 @@ package product
 //includes a map of ints to products, in a read write mutex, product as key and product as value. multithreaded and maps in go are not thread safe
 //thats why we warp our map in mutex to avoid two thread reading and writing at same time
 import (
+	"context"
 	"database/sql"
 	"gowebservice/database"
+	"time"
 )
 
 func getProduct(ProductID int) (*Product, error) {
-	row := database.DbConn.QueryRow(`SELECT productId,
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	row := database.DbConn.QueryRowContext(ctx, `SELECT productId,
 	Manufaturer, 
 	sku, 
 	upc,
@@ -42,8 +46,10 @@ func removeProduct(productID int) error {
 }
 
 func getProductList() ([]Product, error) {
-	results, err := database.DbConn.Query(`SELECT productId,
-	Manufaturer, 
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	results, err := database.DbConn.QueryContext(ctx, `SELECT productId,
+	manufaturer, 
 	sku, 
 	upc,
 	pricePerUnit,
@@ -70,7 +76,9 @@ func getProductList() ([]Product, error) {
 }
 
 func updateProduct(product Product) error {
-	_, err := database.DbConn.Exec(`UPDATE products SET Manufacturer=?, 
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	_, err := database.DbConn.ExecContext(ctx, `UPDATE products SET Manufacturer=?, 
 	Sku=?, 
 	Upc=?, 
 	PricePerUnit=?,
@@ -90,7 +98,9 @@ func updateProduct(product Product) error {
 }
 
 func insertProduct(product Product) (int, error) {
-	result, err := database.DbConn.Exec(`INSERT INTO products
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	result, err := database.DbConn.ExecContext(ctx, `INSERT INTO products
 		(Manufacturer,
 		sku,
 		upc, 

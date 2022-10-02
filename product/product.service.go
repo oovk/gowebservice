@@ -20,7 +20,7 @@ func SetupRoutes(apiBasePath string) {
 }
 
 func productHandler(w http.ResponseWriter, r *http.Request) {
-	urlPathSegments := strings.Split(r.URL.Path, fmt.Sprint("%s/", productBasePath)) //checking thr productID
+	urlPathSegments := strings.Split(r.URL.Path, fmt.Sprintf("%s/", productBasePath)) //checking thr productID
 	if len(urlPathSegments[1:]) > 1 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
