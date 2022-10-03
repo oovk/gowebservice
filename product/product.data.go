@@ -85,6 +85,39 @@ func getProductList() ([]Product, error) {
 	return products, nil
 }
 
+func GetTopTenProducts() ([]Product, error) {
+	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
+	defer cancle()
+	results, err := database.DbConn.QueryContext(ctx, `SELECT
+	productId,
+	manufacturer, 
+	sku, 
+	upc, 
+	pricePerUnit,
+	quantityOnHand,
+	productName
+	FROM products ORDER BY quantityOnHand DESC LIMIT 10
+	`)
+	if err != nil {
+		log.Print(err.Error())
+		return nil, err
+	}
+	defer results.Close()
+	products := make([]Product, 0)
+	for results.Next() {
+		var product Product
+		results.Scan(&product.ProductID,
+			&product.Manufacturer,
+			&product.Sku,
+			&product.Upc,
+			&product.PricePerUnit,
+			&product.QuantityOnHand,
+			&product.ProductName)
+		products = append(products, product)
+	}
+	return products, nil
+}
+
 func updateProduct(product Product) error {
 	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
 	defer cancle()
