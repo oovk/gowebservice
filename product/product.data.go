@@ -147,42 +147,42 @@ func updateProduct(product Product) error {
 }
 
 func searchForProductData(productFilter ProductReportFilter) ([]Product, error) {
-	ctx, cancle := context.WithTimeout(context.Background(), 15*time.Second) //if the query is going to take longer than 15 sec then its going to cancle and return
-	defer cancle()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
 	var queryArgs = make([]interface{}, 0)
-	var queryBuilder strings.Builder //append to our query string programatically
+	var queryBuilder strings.Builder
 	queryBuilder.WriteString(`SELECT 
 		productId, 
-		LOWER(),
-		LOWER(),
-		upc,
-		pricePerUnit,
-		quantityOnHand,
-		LOWER(productName),
-		FROM products WHERE`)
+		LOWER(manufacturer), 
+		LOWER(sku), 
+		upc, 
+		pricePerUnit, 
+		quantityOnHand, 
+		LOWER(productName) 
+		FROM products WHERE `)
 	if productFilter.NameFilter != "" {
-		queryBuilder.WriteString(`productName LIKE ?`)
+		queryBuilder.WriteString(`productName LIKE ? `)
 		queryArgs = append(queryArgs, "%"+strings.ToLower(productFilter.NameFilter)+"%")
 	}
 	if productFilter.ManufacturerFilter != "" {
 		if len(queryArgs) > 0 {
 			queryBuilder.WriteString(" AND ")
 		}
-		queryBuilder.WriteString(`manufacturer LIKE ?`)
+		queryBuilder.WriteString(`manufacturer LIKE ? `)
 		queryArgs = append(queryArgs, "%"+strings.ToLower(productFilter.ManufacturerFilter)+"%")
 	}
 	if productFilter.SKUFilter != "" {
 		if len(queryArgs) > 0 {
 			queryBuilder.WriteString(" AND ")
 		}
-		queryBuilder.WriteString(`sku LIKE ?`)
+		queryBuilder.WriteString(`sku LIKE ? `)
 		queryArgs = append(queryArgs, "%"+strings.ToLower(productFilter.SKUFilter)+"%")
 	}
 
 	results, err := database.DbConn.QueryContext(ctx, queryBuilder.String(), queryArgs...)
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		return nil, err
 	}
 	defer results.Close()
