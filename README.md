@@ -14,8 +14,8 @@ Run `go run main.go` to build the project.
 
 ## Application Images
 
-![image.jp2](ManageInventory.jp2)
+![image.png](ManageInventory.png)
 
-![image.jp2](receipt.jp2)
+![image.png](receipt.png)
 
-![image.jp2](database.jp2)
+![image.png](database.png)
