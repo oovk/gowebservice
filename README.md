@@ -33,3 +33,4 @@ Run `go run main.go` to build the project.
 ![image.png](productdemo/Addproduct.png)
 ![image.png](productdemo/updateproduct.png)
 ![image.png](productdemo/uploadndownload.png)
+![image.png](productdemo/database.png)
