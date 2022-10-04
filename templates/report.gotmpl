@@ -16,6 +16,7 @@ Quantity On Hand
 </th>
 </tr>
 {{range $index, $element := .}}
+{{if mod $index 2}}<tr style= "background:#6a7d87;">{{else}}</tr>{{end}}
 <tr>
 <td>
 {{$index}}
