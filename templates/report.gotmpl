@@ -1,0 +1,33 @@
+<!doctype html>
+<head>
+</head>
+<body>
+<h1>Product Summary Report</h1>
+<table>
+<tr>
+<th>
+Row
+</th>
+<th>
+Product Name
+</th>
+<th>
+Quantity On Hand
+</th>
+</tr>
+{{range $index, $element := .}}
+<tr>
+<td>
+{{$index}}
+</td>
+<td>
+{{.productName}}
+</td>
+<td>
+{{.QuantityOnHand}}
+</td>
+</tr>
+{{end}}
+</table>
+</body>
+</html>
