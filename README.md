@@ -11,3 +11,11 @@ https://github.com/oovk/gowebservice-frontend
 ## To Run
 
 Run `go run main.go` to build the project.
+
+## Application Images
+
+![image.jp2](ManageInventory.jp2)
+
+![image.jp2](receipt.jp2)
+
+![image.jp2](database.jp2)
