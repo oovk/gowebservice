@@ -26,3 +26,10 @@ https://dev.mysql.com/downloads/workbench/
 ### To Run
 
 Run `go run main.go` to build the project.
+
+### Working demo
+
+![image.png](productdemo/productlist.png)
+![image.png](productdemo/Addproduct.png)
+![image.png](productdemo/updateproduct.png)
+![image.png](productdemo/uploadndownload.png)
